@@ -114,7 +114,6 @@ print("Salary Stats by Education Level:\n", edu_stats)
 country_comp = df_clean.groupby('Country')['ConvertedCompYearly'].mean()
 top_10_countries = country_comp.sort_values(ascending=False).head(10)
 print("Top 10 Highest Paying Countries:\n", top_10_countries)
-# List of languages provided in your exercise
 languages = ['C#', 'Flutter', 'Java', 'JavaScript', 'Matlab', 'PhP', 'Python', 'React', 'Swift', 'TypeScript']
 languages.sort()
 student_last_three = 585
@@ -123,6 +122,74 @@ assigned_lang = languages[lang_index]
 print(f"Your assigned language is: {assigned_lang}")
 import pandas as pd
 import numpy as np
-df = pd.read_csv('Most Popular Programming Languages.csv')
-print("Before conversion:\n", df['2026-04'].head())
+student_id = 585
+threshold = 5.0  
+window_size = 12 
+try:
+    df = pd.read_csv('Most Popular Programming Languages.csv')
+    df['Month'] = pd.to_datetime(df['Month'])
+    df = df.sort_values('Month')
+    languages = sorted([col for col in df.columns if col != 'Month'])
+    language_index = student_id % 10
+    assigned_lang = languages[language_index]
+    print(f"Assigned Language for ID {student_id}: {assigned_lang}")
+    print("-" * 40)
+    df['Growth_Rate'] = df[assigned_lang].pct_change() * 100
+    df['Rolling_Mean'] = df[assigned_lang].rolling(window=window_size).mean()
+    df['Rolling_Std'] = df[assigned_lang].rolling(window=window_size).std()
+    conditions = [
+        (df['Growth_Rate'] > threshold),
+        (df['Growth_Rate'] < -threshold),
+        (df['Growth_Rate'].between(-threshold, threshold))
+    ]
+    choices = ['Growth', 'Decline', 'Stable']
+    df['Phase'] = np.select(conditions, choices, default='Unknown')
+    print("Descriptive Statistics:")
+    print(df[assigned_lang].describe())
+    print(f"\nMedian Popularity: {df[assigned_lang].median():.2f}")
+    first_val = df[assigned_lang].iloc[0]
+    last_val = df[assigned_lang].iloc[-1]
+    total_growth = ((last_val - first_val) / first_val) * 100
+    print(f"\nOverall growth (start to finish): {total_growth:.2f}%")
+    print("\nGrowth Phase Frequency:")
+    print(df['Phase'].value_counts())
 
+except FileNotFoundError:
+    print("Error: 'Most Popular Programming Languages.csv' not found.")
+import pandas as pd
+import numpy as np
+student_id = 585
+filename = 'Most Popular Programming Languages.csv'
+try:
+    df = pd.read_csv(filename)
+    df['Month'] = pd.to_datetime(df['Month'])
+    df = df.sort_values('Month')
+    languages = sorted([col for col in df.columns if col != 'Month'])
+    assigned_lang = languages[student_id % 10]
+    print(f"Analyzing Lifecycle for: {assigned_lang}\n")
+    df['Growth_Rate'] = df[assigned_lang].pct_change() * 100
+    df['Moving_Avg'] = df[assigned_lang].rolling(window=6).mean()
+    df['Moving_STD'] = df[assigned_lang].rolling(window=6).std()
+    overall_mean = df['Growth_Rate'].mean()
+    overall_std = df['Growth_Rate'].std()
+    conditions = [
+        (df['Growth_Rate'] > overall_mean),                               # Growth
+        (df['Growth_Rate'] > 0) & (df['Growth_Rate'] <= overall_mean),    # Introduction
+        (df['Growth_Rate'].abs() <= 1.0),                                 # Maturity
+        (df['Growth_Rate'] < 0) & (df['Growth_Rate'] < (-1 * overall_std)) # Decline
+    ]
+    choices = ['Growth', 'Introduction', 'Maturity', 'Decline']
+    
+    df['Lifecycle_Phase'] = np.select(conditions, choices, default='Stable/Transition')
+    output_cols = ['Month', assigned_lang, 'Growth_Rate', 'Moving_Avg', 'Moving_STD', 'Lifecycle_Phase']
+    print("--- Lifecycle Classification Table (Head) ---")
+    print(df[output_cols].tail(10))
+    print("\n--- Phase Distribution ---")
+    counts = df['Lifecycle_Phase'].value_counts()
+    percentages = df['Lifecycle_Phase'].value_counts(normalize=True) * 100
+    summary_df = pd.DataFrame({'Count': counts, 'Percentage': percentages})
+    print(summary_df)
+    dominant_stage = counts.idxmax()
+    print(f"\nDominant Stage: {assigned_lang} is primarily in the '{dominant_stage}' phase.")
+except Exception as e:
+    print(f"An error occurred: {e}")
